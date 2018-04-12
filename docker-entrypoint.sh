@@ -24,7 +24,7 @@ server {
 
   server_name ${2};
 
-  return ${3} ${1};
+  return ${3} ${1}\$request_uri;
 }
 EOF
 }
