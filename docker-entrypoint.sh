@@ -5,6 +5,7 @@ set -e
 
 REDIRECTS=()
 
+DEFAULT_SERVER_FILE=$NGINX_INSTALL_PATH/conf.d/default_server.conf
 REDIRECTS_FILE=$NGINX_INSTALL_PATH/conf.d/redirects.conf
 
 redirect_exists () {
@@ -24,7 +25,14 @@ server {
 
   server_name ${2};
 
-  return ${3} ${1}\$request_uri;
+  location = /health_check {
+    return 200;
+    access_log off;
+  }
+
+  location / {
+    return ${3} ${1}\$request_uri;
+  }
 }
 EOF
 }
@@ -49,6 +57,12 @@ else
         echo "WARNING! Duplicate redirect source defined: '$source' :: Using existing redirect..."
       elif [[ "$code" == "301" || "$code" == "302" ]]; then
         echo "Configuring NGINX redirect: ($code) '$source' -> '$dest'"
+
+        if [[ "$source" == "_" && -f $DEFAULT_SERVER_FILE ]]; then
+          echo "No source provided, removing default server config..."
+          rm $DEFAULT_SERVER_FILE
+        fi
+
         REDIRECTS+=("$source")
         echo "$(create_redirect $dest $source $code)" >> $REDIRECTS_FILE
       else
